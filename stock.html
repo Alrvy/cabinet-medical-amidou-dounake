@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Gestion de stock — Cabinet Médical Amidou Dounake</title>
+  <title>Espace cabinet — Cabinet Médical Amidou Dounake</title>
   <meta name="theme-color" content="#115e59">
   <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
@@ -15,71 +15,100 @@
     <div class="container header__inner">
       <a href="index.html" class="logo">
         <img src="img/favicon.svg" alt="" width="30" height="30">
-        <span>Espace cabinet<br><strong>Gestion de stock</strong></span>
+        <span>Cabinet Amidou Dounake<br><strong>Espace cabinet</strong></span>
       </a>
-      <button id="btn-logout" class="btn btn--small btn--ghost hidden" style="color:#fff;border-color:#fff">Verrouiller</button>
+      <button id="btn-logout" class="btn btn--small btn--ghost btn--light hidden">Déconnexion</button>
     </div>
   </header>
 
-  <!-- ====== ÉCRAN DE VERROUILLAGE ====== -->
-  <section id="lock-screen" class="lock container">
-    <h1 id="lock-title">Espace cabinet</h1>
-    <p id="lock-text">Entrez votre code d'accès.</p>
-    <form id="lock-form" class="form">
-      <label>Code d'accès
-        <input type="password" id="pin" inputmode="numeric" autocomplete="current-password" minlength="4" required>
-      </label>
-      <label id="pin2-wrap" class="hidden">Confirmer le code
-        <input type="password" id="pin2" inputmode="numeric" autocomplete="new-password" minlength="4">
-      </label>
-      <p class="form__error" id="lock-error" role="alert"></p>
-      <button type="submit" class="btn">Entrer</button>
+  <!-- ====== CONFIGURATION MANQUANTE ====== -->
+  <section id="no-config" class="lock container hidden">
+    <h1>Base de données non configurée</h1>
+    <p>Renseignez <code>supabaseUrl</code> et <code>supabaseAnonKey</code> dans <code>js/config.js</code> (voir README).</p>
+  </section>
+
+  <!-- ====== CONNEXION ====== -->
+  <section id="lock-screen" class="lock container hidden">
+    <h1>Espace cabinet</h1>
+    <p>Connectez-vous pour gérer le stock et les rendez-vous.</p>
+    <form id="login-form" class="form">
+      <label>E-mail<input type="email" id="email" autocomplete="username" required></label>
+      <label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label>
+      <p class="form__error" id="login-error" role="alert"></p>
+      <button type="submit" class="btn" id="login-btn">Se connecter</button>
     </form>
   </section>
 
   <!-- ====== APPLICATION ====== -->
   <main id="app" class="container hidden" style="padding-bottom:3rem">
-    <div class="kpis">
-      <div class="kpi"><strong id="k-total">0</strong><span>articles en stock</span></div>
-      <div class="kpi kpi--warn"><strong id="k-low">0</strong><span>stock faible</span></div>
-      <div class="kpi kpi--danger"><strong id="k-out">0</strong><span>ruptures</span></div>
-      <div class="kpi kpi--danger"><strong id="k-exp">0</strong><span>périmés / &lt; 30 jours</span></div>
-    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab is-active" data-tab="stock" role="tab">Stock</button>
+      <button class="tab" data-tab="rdv" role="tab">Rendez-vous <span class="tab__count" id="rdv-count"></span></button>
+    </nav>
 
-    <div class="toolbar">
-      <input type="search" id="search" placeholder="Rechercher un article, un fournisseur…">
-      <select id="filter-cat">
-        <option value="">Toutes catégories</option>
-      </select>
-      <select id="filter-state">
-        <option value="">Tous états</option>
-        <option value="low">Stock faible</option>
-        <option value="out">Rupture</option>
-        <option value="exp">Périmé / bientôt</option>
-      </select>
-      <button class="btn btn--small" id="btn-add">+ Ajouter un article</button>
-    </div>
+    <!-- ----- Onglet STOCK ----- -->
+    <section id="tab-stock">
+      <div class="kpis">
+        <div class="kpi"><strong id="k-total">0</strong><span>articles en stock</span></div>
+        <div class="kpi kpi--warn"><strong id="k-low">0</strong><span>stock faible</span></div>
+        <div class="kpi kpi--danger"><strong id="k-out">0</strong><span>ruptures</span></div>
+        <div class="kpi kpi--danger"><strong id="k-exp">0</strong><span>périmés / &lt; 30 jours</span></div>
+      </div>
 
-    <div class="table-wrap">
-      <table class="stock-table">
-        <thead>
-          <tr>
-            <th>Article</th><th>Catégorie</th><th>Quantité</th><th>Seuil</th>
-            <th>Péremption</th><th>Fournisseur</th><th>État</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="stock-body"></tbody>
-      </table>
-      <p id="empty" class="empty hidden">Aucun article. Cliquez sur « + Ajouter un article » pour commencer.</p>
-    </div>
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Rechercher un article, un fournisseur…">
+        <select id="filter-cat"><option value="">Toutes catégories</option></select>
+        <select id="filter-state">
+          <option value="">Tous états</option>
+          <option value="low">Stock faible</option>
+          <option value="out">Rupture</option>
+          <option value="exp">Périmé / bientôt</option>
+        </select>
+        <button class="btn btn--small" id="btn-add">+ Ajouter un article</button>
+      </div>
 
-    <div class="toolbar">
-      <button class="btn btn--small btn--ghost" id="btn-history">Historique des mouvements</button>
-      <button class="btn btn--small btn--ghost" id="btn-csv">Exporter (Excel/CSV)</button>
-      <button class="btn btn--small btn--ghost" id="btn-backup">Sauvegarder</button>
-      <label class="btn btn--small btn--ghost">Restaurer<input type="file" id="file-restore" accept="application/json" hidden></label>
-    </div>
-    <p class="small-muted">Les données sont enregistrées sur cet appareil, dans ce navigateur. Faites régulièrement une sauvegarde (bouton « Sauvegarder ») et gardez le fichier en lieu sûr.</p>
+      <div class="table-wrap">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Article</th><th>Catégorie</th><th>Quantité</th><th>Seuil</th>
+              <th>Péremption</th><th>Fournisseur</th><th>État</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="stock-body"></tbody>
+        </table>
+        <p id="empty" class="empty hidden"></p>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn btn--small btn--ghost" id="btn-history">Historique des mouvements</button>
+        <button class="btn btn--small btn--ghost" id="btn-csv">Exporter (Excel/CSV)</button>
+        <button class="btn btn--small btn--ghost" id="btn-refresh">Actualiser</button>
+      </div>
+    </section>
+
+    <!-- ----- Onglet RENDEZ-VOUS ----- -->
+    <section id="tab-rdv" class="hidden">
+      <div class="toolbar">
+        <select id="rdv-filter">
+          <option value="a_venir">À venir</option>
+          <option value="en_attente">En attente</option>
+          <option value="tous">Tous</option>
+        </select>
+        <button class="btn btn--small btn--ghost" id="btn-rdv-refresh">Actualiser</button>
+      </div>
+      <div class="table-wrap">
+        <table class="stock-table">
+          <thead>
+            <tr><th>Date</th><th>Moment</th><th>Patient</th><th>Téléphone</th><th>Motif</th><th>Statut</th></tr>
+          </thead>
+          <tbody id="rdv-body"></tbody>
+        </table>
+        <p id="rdv-empty" class="empty hidden">Aucun rendez-vous.</p>
+      </div>
+    </section>
+
+    <p class="small-muted" id="sync-status"></p>
   </main>
 
   <!-- ====== DIALOGUE ARTICLE ====== -->
@@ -97,7 +126,7 @@
         <label>Unité<input name="unite" placeholder="Ex : boîte, flacon, pièce"></label>
       </div>
       <div class="form__row">
-        <label>Quantité *<input name="quantite" type="number" min="0" step="1" required value="0"></label>
+        <label id="qte-wrap">Quantité initiale *<input name="quantite" type="number" min="0" step="1" required value="0"></label>
         <label>Seuil d'alerte<input name="seuil" type="number" min="0" step="1" value="5"></label>
       </div>
       <div class="form__row">
@@ -105,6 +134,7 @@
         <label>Prix unitaire (FCFA)<input name="prix" type="number" min="0" step="1"></label>
       </div>
       <label>Fournisseur<input name="fournisseur" placeholder="Ex : Pharmacie Djiguiya"></label>
+      <p class="small-muted hidden" id="qte-hint">Pour changer la quantité, utilisez le bouton ± (entrée / sortie).</p>
       <p class="form__error" id="item-error"></p>
       <div class="dialog-actions">
         <button type="button" class="btn btn--ghost" data-close>Annuler</button>
@@ -145,6 +175,8 @@
     </div>
   </dialog>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
   <script src="js/stock.js"></script>
 </body>
 </html>
