@@ -52,13 +52,40 @@
       return;
     }
     err.textContent = "";
+    var motif = d.motif.value.trim();
     var dateFr = date.split("-").reverse().join("/");
     var msg =
       "Bonjour, je souhaite prendre rendez-vous au " + cfg.nom + ".\n" +
       "Nom : " + nom + "\n" +
       "Téléphone : " + tel + "\n" +
       "Date souhaitée : " + dateFr + " (" + d.moment.value + ")\n" +
-      (d.motif.value.trim() ? "Motif : " + d.motif.value.trim() : "");
+      (motif ? "Motif : " + motif : "");
+
+    // 1) Enregistrement dans la base (en arrière-plan)
+    enregistrerRdv({
+      nom: nom, telephone: tel, date_souhaitee: date,
+      moment: d.moment.value, motif: motif || null
+    });
+    // 2) Envoi WhatsApp (ouvert immédiatement pour ne pas être bloqué par le navigateur)
     window.open("https://wa.me/" + cfg.whatsapp + "?text=" + encodeURIComponent(msg), "_blank");
+    form.reset();
+    ok.textContent = "Merci ! Votre demande a été transmise au cabinet, qui vous rappellera pour confirmer.";
   });
+
+  var ok = document.getElementById("rdv-ok");
+
+  // Insertion directe via l'API REST de Supabase (pas de bibliothèque à charger sur la page publique)
+  function enregistrerRdv(rdv) {
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return;
+    fetch(cfg.supabaseUrl.replace(/\/$/, "") + "/rest/v1/rendez_vous", {
+      method: "POST",
+      headers: {
+        "apikey": cfg.supabaseAnonKey,
+        "Authorization": "Bearer " + cfg.supabaseAnonKey,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(rdv)
+    }).catch(function () { /* le message WhatsApp reste envoyé */ });
+  }
 })();
