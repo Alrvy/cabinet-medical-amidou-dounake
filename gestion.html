@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Gestion — Cabinet Médical Amidou Dounake</title>
+  <meta name="theme-color" content="#115e59">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/gestion.css">
+</head>
+<body class="stock-page">
+
+  <header class="header stock-header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <img src="img/favicon.svg" alt="" width="30" height="30">
+        <span>Cabinet Amidou Dounake<br><strong>Gestion</strong></span>
+      </a>
+      <div class="user-box hidden" id="user-box">
+        <span id="user-name"></span>
+        <span class="role-badge" id="user-role"></span>
+        <button id="btn-logout" class="btn btn--small btn--ghost btn--light">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Configuration manquante -->
+  <section id="no-config" class="lock container hidden">
+    <h1>Base de données non configurée</h1>
+    <p>Renseignez <code>supabaseUrl</code> et <code>supabaseAnonKey</code> dans <code>js/config.js</code>.</p>
+  </section>
+
+  <!-- Connexion -->
+  <section id="lock-screen" class="lock container hidden">
+    <h1>Espace cabinet</h1>
+    <p>Connectez-vous avec le compte fourni par l'administrateur.</p>
+    <form id="login-form" class="form">
+      <label>E-mail<input type="email" id="email" autocomplete="username" required></label>
+      <label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label>
+      <p class="form__error" id="login-error" role="alert"></p>
+      <button type="submit" class="btn" id="login-btn">Se connecter</button>
+    </form>
+  </section>
+
+  <!-- Compte sans profil / désactivé -->
+  <section id="no-profile" class="lock container hidden">
+    <h1>Accès non autorisé</h1>
+    <p>Ce compte n'a pas de rôle dans le cabinet ou a été désactivé. Contactez l'administrateur.</p>
+    <button class="btn" id="btn-logout-2">Se déconnecter</button>
+  </section>
+
+  <!-- Application -->
+  <main id="app" class="container hidden" style="padding-bottom:3rem">
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <div id="views"></div>
+    <p class="small-muted" id="sync-status"></p>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/gestion/core.js"></script>
+  <script src="js/gestion/patients.js"></script>
+  <script src="js/gestion/rdv.js"></script>
+  <script src="js/gestion/stock.js"></script>
+  <script src="js/gestion/utilisateurs.js"></script>
+  <script src="js/gestion/start.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+/* Styles propres à l'application de gestion (complète style.css) */
+.user-box { display: flex; align-items: center; gap: 0.7rem; color: #fff; font-size: 0.9rem; }
+.role-badge { background: rgba(255, 255, 255, 0.18); padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+
+.tabs { flex-wrap: wrap; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 150%);
+  background: var(--primary-dark); color: #fff; padding: 0.8rem 1.3rem; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); transition: transform 0.25s; z-index: 100; max-width: 92vw;
+}
+.toast.is-visible { transform: translate(-50%, 0); }
+.toast--err { background: var(--danger); }
+
+.card-box { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.3rem 1.5rem; margin-top: 1.2rem; }
+.card-box__head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+.card-box__head h3 { color: var(--primary-dark); }
+
+.fiche-head { display: grid; grid-template-columns: 1fr auto; gap: 0.6rem 1rem; align-items: start; }
+.fiche-head h2 { font-size: 1.6rem; color: var(--text); }
+.fiche-head .kv-grid { grid-column: 1 / -1; }
+.kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.8rem 1.5rem; }
+.kv span { display: block; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.kv strong { font-weight: 500; white-space: pre-line; }
+.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.muted { color: var(--muted); }
+
+.alert-allergie { background: #fee2e2; color: #991b1b; border-radius: 10px; padding: 0.6rem 0.9rem; font-weight: 600; margin-bottom: 0.8rem; }
+.val-alerte { color: var(--danger); font-weight: 600; }
+
+.consult { border-left: 4px solid var(--primary); background: var(--bg-alt); border-radius: 10px; padding: 0.9rem 1.1rem; margin-bottom: 0.8rem; }
+.consult header { margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.consult p { margin: 0.25rem 0; }
+.consult .lbl { display: inline-block; min-width: 95px; color: var(--muted); font-size: 0.85rem; }
+
+.stock-table tr.clickable { cursor: pointer; }
+.stock-table tr.clickable:hover td { background: var(--bg-alt); }
+.stock-table tr.row-today td { background: #fefce8; }
+.stock-table tr.row-off td { opacity: 0.55; }
+.table-wrap--flat { box-shadow: none; border: 1px solid var(--border); }
+
+.form__row--4 { grid-template-columns: repeat(4, 1fr); }
+dialog.dialog--large { width: min(760px, 96vw); }
+dialog { max-height: 94vh; overflow-y: auto; }
+.consult-const { border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.9rem; }
+.consult-const summary { cursor: pointer; font-weight: 600; color: var(--primary-dark); }
+.consult-const[open] summary { margin-bottom: 0.7rem; }
+.consult-const .form__row + .form__row { margin-top: 0.7rem; }
+
+.droits { padding-left: 1.2rem; }
+.droits li { margin-bottom: 0.35rem; }
+
+@media (max-width: 700px) {
+  .form__row--4 { grid-template-columns: 1fr 1fr; }
+  .user-box #user-name { display: none; }
+  .fiche-head { grid-template-columns: 1fr; }
+}
