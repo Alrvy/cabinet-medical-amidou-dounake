@@ -2,6 +2,10 @@
 window.CABINET = {
   nom: "Cabinet Médical Amidou Dounake",
 
+  // En-tête des ordonnances et des reçus
+  adresse: "Banconi Zekenekorobougou, face à la pharmacie Djiguiya au Razel — Bamako, Mali",
+  telephones: "66 88 60 33 / 76 44 40 52",
+
   // Numéro WhatsApp qui reçoit les demandes de rendez-vous (format international, sans + ni espaces)
   whatsapp: "22366886033",
 

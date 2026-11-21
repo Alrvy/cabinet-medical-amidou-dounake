@@ -3,6 +3,8 @@
 .role-badge { background: rgba(255, 255, 255, 0.18); padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
 
 .tabs { flex-wrap: wrap; }
+.view-off { height: 0; overflow: hidden; visibility: hidden; }
+.view-off dialog { visibility: visible; }
 
 .toast {
   position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 150%);
@@ -47,6 +49,30 @@ dialog { max-height: 94vh; overflow-y: auto; }
 .consult-const[open] summary { margin-bottom: 0.7rem; }
 .consult-const .form__row + .form__row { margin-top: 0.7rem; }
 
+.r { text-align: right !important; }
+.fiche-head .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.total-ligne { text-align: right; margin-top: 0.6rem; }
+
+/* Ordonnance */
+.ordo-ligne { display: grid; grid-template-columns: 2.2fr 2fr 1fr 1fr auto auto; gap: 0.5rem; align-items: end; padding: 0.6rem 0; border-bottom: 1px dashed var(--border); }
+.ordo-deliv { display: flex !important; align-items: center; gap: 0.3rem; white-space: nowrap; padding-bottom: 0.7rem; font-size: 0.85rem; }
+.ordo-deliv input { width: auto !important; }
+.ordo-ligne .icon-btn { margin-bottom: 0.45rem; }
+
+/* Caisse */
+.patient-pick { position: relative; }
+.pick-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); max-height: 260px; overflow-y: auto; }
+.pick-list button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 0.6rem 0.8rem; font: inherit; cursor: pointer; }
+.pick-list button:hover { background: var(--bg-alt); }
+.pay-lignes input { font: inherit; padding: 0.45rem 0.55rem; border: 1px solid var(--border); border-radius: 8px; width: 100%; }
+.pay-lignes td { white-space: normal; }
+.pay-lignes td:nth-child(2) { width: 120px; }
+.pay-lignes td:nth-child(3) { width: 80px; }
+.pay-total { text-align: right; font-size: 1.2rem; }
+.pay-total strong { color: var(--primary-dark); }
+.form label.check { display: flex; align-items: center; gap: 0.5rem; }
+.form label.check input { width: auto; }
+
 .droits { padding-left: 1.2rem; }
 .droits li { margin-bottom: 0.35rem; }
 
@@ -54,4 +80,5 @@ dialog { max-height: 94vh; overflow-y: auto; }
   .form__row--4 { grid-template-columns: 1fr 1fr; }
   .user-box #user-name { display: none; }
   .fiche-head { grid-template-columns: 1fr; }
+  .ordo-ligne { grid-template-columns: 1fr 1fr; }
 }

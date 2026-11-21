@@ -5,7 +5,8 @@
   var el, users = [];
   var TABLES = {
     patients: "Patient", patients_medical: "Infos médicales", consultations: "Consultation",
-    constantes: "Constantes", articles: "Article de stock", rendez_vous: "Rendez-vous", profils: "Compte"
+    constantes: "Constantes", articles: "Article de stock", rendez_vous: "Rendez-vous", profils: "Compte",
+    ordonnances: "Ordonnance", actes: "Tarif", paiements: "Paiement"
   };
   var ACTIONS = { INSERT: "Création", UPDATE: "Modification", DELETE: "Suppression" };
 
@@ -25,9 +26,10 @@
       '<div class="card-box"><div class="card-box__head"><h3>Droits par rôle</h3></div>' +
         '<ul class="droits">' +
           '<li><strong>Administrateur</strong> : tout, y compris la gestion des comptes et le journal.</li>' +
-          '<li><strong>Médecin</strong> : patients, dossier médical, consultations, constantes, stock, rendez-vous.</li>' +
-          '<li><strong>Infirmier(e)</strong> : patients, dossier médical, constantes, stock ; consultations et rendez-vous en lecture.</li>' +
-          '<li><strong>Secrétaire</strong> : identité des patients et rendez-vous ; aucun accès au médical ni au stock.</li>' +
+          '<li><strong>Médecin</strong> : patients, dossier médical, consultations, ordonnances, constantes, caisse, stock, rendez-vous.</li>' +
+          '<li><strong>Infirmier(e)</strong> : patients, dossier médical, constantes, stock ; consultations, ordonnances et rendez-vous en lecture. Pas de caisse.</li>' +
+          '<li><strong>Secrétaire</strong> : identité des patients, rendez-vous, caisse ; aucun accès au médical ni au stock.</li>' +
+          '<li>Seul l\'administrateur peut annuler un reçu (avec motif) et modifier les tarifs.</li>' +
         '</ul></div>' +
       '<div class="card-box"><div class="card-box__head"><h3>Journal d\'activité</h3>' +
         '<button class="btn btn--small btn--ghost" id="jr-refresh">Actualiser</button></div>' +

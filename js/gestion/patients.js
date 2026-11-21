@@ -88,6 +88,19 @@
         '<label>Notes<textarea name="notes" rows="2"></textarea></label>' +
         '<p class="form__error" id="consult-form-err"></p>' +
         '<div class="dialog-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button class="btn">Enregistrer</button></div>' +
+      '</form></dialog>' +
+      // ----- Dialogue ordonnance -----
+      '<dialog id="dlg-ordo" class="dialog--large"><form class="form" id="form-ordo" method="dialog">' +
+        '<h2>Nouvelle ordonnance</h2>' +
+        '<p class="small-muted" id="ordo-info"></p>' +
+        '<div id="ordo-lignes"></div>' +
+        '<datalist id="ordo-articles"></datalist>' +
+        '<button type="button" class="btn btn--small btn--ghost" id="ordo-add-ligne">+ Ajouter un médicament</button>' +
+        '<label>Conseils / remarques<textarea name="notes" rows="2"></textarea></label>' +
+        '<p class="small-muted">Cochez « Délivré » pour les médicaments donnés par le cabinet : ils seront sortis du stock.</p>' +
+        '<p class="form__error" id="ordo-form-err"></p>' +
+        '<div class="dialog-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button>' +
+          '<button class="btn btn--ghost" value="save">Enregistrer</button><button class="btn" value="print">Enregistrer et imprimer</button></div>' +
       '</form></dialog>';
 
     var timer;
@@ -101,10 +114,121 @@
       if (tr) ouvrirFiche(tr.dataset.id);
     });
     $("#pat-fiche", el).addEventListener("click", modifierConsultation);
+    $("#pat-fiche", el).addEventListener("click", actionsFiche);
     $("#form-patient", el).addEventListener("submit", enregistrerPatient);
     $("#form-medical", el).addEventListener("submit", enregistrerMedical);
     $("#form-const", el).addEventListener("submit", enregistrerConstantes);
     $("#form-consult", el).addEventListener("submit", enregistrerConsultation);
+    $("#form-ordo", el).addEventListener("submit", enregistrerOrdonnance);
+    $("#ordo-add-ligne", el).addEventListener("click", function () { ajouterLigneOrdo(); });
+    $("#ordo-lignes", el).addEventListener("click", function (e) {
+      var b = e.target.closest("[data-del-ligne]");
+      if (b && $("#ordo-lignes", el).children.length > 1) b.closest(".ordo-ligne").remove();
+    });
+    $("#ordo-lignes", el).addEventListener("input", majDelivrable);
+  }
+
+  // ---------------- Ordonnances ----------------
+  var articlesStock = [];
+
+  function ajouterLigneOrdo(l) {
+    l = l || {};
+    var div = document.createElement("div");
+    div.className = "ordo-ligne";
+    div.innerHTML =
+      '<label>Médicament *<input data-f="medicament" list="ordo-articles" value="' + esc(l.medicament || "") + '" placeholder="Ex : Paracétamol 500 mg"></label>' +
+      '<label>Posologie<input data-f="posologie" value="' + esc(l.posologie || "") + '" placeholder="1 cp matin, midi et soir"></label>' +
+      '<label>Durée<input data-f="duree" value="' + esc(l.duree || "") + '" placeholder="5 jours"></label>' +
+      '<label>Qté<input data-f="quantite" value="' + esc(l.quantite || "") + '" placeholder="1 boîte"></label>' +
+      '<label class="ordo-deliv" title="Sortir du stock du cabinet"><input type="checkbox" data-f="delivre" disabled> Délivré</label>' +
+      '<button type="button" class="icon-btn" data-del-ligne title="Retirer">✕</button>';
+    $("#ordo-lignes", el).appendChild(div);
+  }
+
+  function articleDe(nom) {
+    nom = (nom || "").trim().toLowerCase();
+    return articlesStock.find(function (a) { return a.nom.toLowerCase() === nom; });
+  }
+
+  // « Délivré » n'est possible que pour un article existant dans le stock
+  function majDelivrable() {
+    G.$$(".ordo-ligne", el).forEach(function (row) {
+      var a = articleDe($("[data-f=medicament]", row).value);
+      var cb = $("[data-f=delivre]", row);
+      cb.disabled = !a || a.quantite <= 0;
+      if (cb.disabled) cb.checked = false;
+      cb.parentElement.title = a ? "En stock : " + a.quantite + " " + (a.unite || "") : "Pas dans le stock du cabinet";
+    });
+  }
+
+  async function ouvrirOrdonnance(consultationId) {
+    var f = $("#form-ordo", el);
+    f.reset();
+    f.dataset.consultation = consultationId || "";
+    $("#ordo-lignes", el).innerHTML = "";
+    ajouterLigneOrdo();
+    $("#ordo-form-err", el).textContent = "";
+    var c = consultationId && patient._consultations.find(function (x) { return x.id === consultationId; });
+    $("#ordo-info", el).textContent = patient.prenom + " " + patient.nom + (c ? " — consultation du " + G.fmtDate(c.date) + (c.diagnostic ? " (" + c.diagnostic + ")" : "") : "");
+    $("#dlg-ordo", el).showModal();
+    var r = await G.db.from("articles").select("id, nom, quantite, unite").order("nom");
+    articlesStock = r.error ? [] : r.data;
+    $("#ordo-articles", el).innerHTML = articlesStock.map(function (a) { return '<option value="' + esc(a.nom) + '">'; }).join("");
+    majDelivrable();
+  }
+
+  async function enregistrerOrdonnance(e) {
+    e.preventDefault();
+    var f = e.target, err = $("#ordo-form-err", el);
+    var imprimerApres = e.submitter && e.submitter.value === "print";
+    var lignes = [], delivres = [];
+    G.$$(".ordo-ligne", el).forEach(function (row) {
+      var l = {};
+      ["medicament", "posologie", "duree", "quantite"].forEach(function (k) { l[k] = $("[data-f=" + k + "]", row).value.trim(); });
+      if (!l.medicament) return;
+      lignes.push(l);
+      if ($("[data-f=delivre]", row).checked) delivres.push({ article: articleDe(l.medicament), qte: parseInt(l.quantite, 10) || 1 });
+    });
+    if (!lignes.length) { err.textContent = "Ajoutez au moins un médicament."; return; }
+    var r = await G.db.from("ordonnances").insert({
+      patient_id: patient.id,
+      consultation_id: f.dataset.consultation || null,
+      lignes: lignes,
+      notes: f.elements.notes.value.trim() || null
+    }).select().single();
+    if (r.error) { err.textContent = G.errMsg(r.error); return; }
+
+    var echecs = [];
+    for (var i = 0; i < delivres.length; i++) {
+      var d = delivres[i];
+      var m = await G.db.rpc("enregistrer_mouvement", {
+        p_article_id: d.article.id, p_type: "out", p_quantite: d.qte,
+        p_note: "Ordonnance N° " + r.data.numero + " — " + patient.prenom + " " + patient.nom
+      });
+      if (m.error) echecs.push(d.article.nom + " (" + G.errMsg(m.error) + ")");
+    }
+    $("#dlg-ordo", el).close();
+    if (echecs.length) G.toast("Ordonnance enregistrée, mais sortie de stock impossible pour : " + echecs.join(", "), true);
+    else G.toast("Ordonnance N° " + r.data.numero + " enregistrée." + (delivres.length ? " Stock mis à jour." : ""));
+    if (imprimerApres) imprimerOrdonnance(r.data);
+    ouvrirFiche(patient.id);
+  }
+
+  function imprimerOrdonnance(o) {
+    var p = patient;
+    var poids = (p._constantes || []).find(function (k) { return k.poids; });
+    var corps = '<h2>ORDONNANCE</h2>' +
+      '<div class="meta"><div><strong>' + esc(p.prenom + " " + p.nom) + '</strong><br>' +
+        [p.sexe === "F" ? "Femme" : p.sexe === "M" ? "Homme" : "", p.date_naissance ? G.ageTexte(p.date_naissance) : "", poids ? poids.poids + " kg" : ""]
+          .filter(Boolean).join(" · ") + '<br><span style="color:#666">Dossier ' + G.numDossier(p.numero) + '</span></div>' +
+        '<div style="text-align:right">Bamako, le ' + G.fmtDate(o.date) + '<br>N° ' + o.numero + '</div></div>' +
+      '<ol>' + o.lignes.map(function (l) {
+        return '<li><strong>' + esc(l.medicament) + '</strong>' + (l.quantite ? ' — ' + esc(l.quantite) : "") +
+          (l.posologie || l.duree ? '<br><span class="pos">' + esc([l.posologie, l.duree ? "pendant " + l.duree : ""].filter(Boolean).join(", ")) + '</span>' : "") + '</li>';
+      }).join("") + '</ol>' +
+      (o.notes ? '<p><em>' + G.nl2br(o.notes) + '</em></p>' : "") +
+      '<div class="sign"><span>' + esc(o.medecin_nom || "Le médecin") + '</span></div>';
+    G.imprimer("Ordonnance " + o.numero + " — " + p.prenom + " " + p.nom, corps, "A5");
   }
 
   // ---------------- Liste ----------------
@@ -172,20 +296,25 @@
     fiche.classList.remove("hidden");
     fiche.innerHTML = '<p class="small-muted">Chargement…</p>';
 
-    var reqs = [G.db.from("patients").select("*").eq("id", id).single()];
-    if (G.soignant()) {
-      reqs.push(G.db.from("patients_medical").select("*").eq("patient_id", id).maybeSingle());
-      reqs.push(G.db.from("constantes").select("*").eq("patient_id", id).order("pris_le", { ascending: false }).limit(20));
-      reqs.push(G.db.from("consultations").select("*").eq("patient_id", id).order("date", { ascending: false }).limit(100));
-    }
-    var res = await Promise.all(reqs);
+    var vide = Promise.resolve({ data: [] }), rien = Promise.resolve({ data: null });
+    var soin = G.soignant(), caisse = G.peut("admin", "medecin", "secretaire");
+    var res = await Promise.all([
+      G.db.from("patients").select("*").eq("id", id).single(),
+      soin ? G.db.from("patients_medical").select("*").eq("patient_id", id).maybeSingle() : rien,
+      soin ? G.db.from("constantes").select("*").eq("patient_id", id).order("pris_le", { ascending: false }).limit(20) : vide,
+      soin ? G.db.from("consultations").select("*").eq("patient_id", id).order("date", { ascending: false }).limit(100) : vide,
+      soin ? G.db.from("ordonnances").select("*").eq("patient_id", id).order("date", { ascending: false }).limit(100) : vide,
+      caisse ? G.db.from("paiements").select("*").eq("patient_id", id).order("date", { ascending: false }).limit(100) : vide
+    ]);
     var err = res.find(function (r) { return r.error; });
     if (err) { fiche.innerHTML = '<p class="form__error">' + esc(G.errMsg(err.error)) + '</p>'; return; }
 
     patient = res[0].data;
-    patient._medical = res[1] ? res[1].data : null;
-    patient._constantes = res[2] ? res[2].data : [];
-    patient._consultations = res[3] ? res[3].data : [];
+    patient._medical = res[1].data;
+    patient._constantes = res[2].data || [];
+    patient._consultations = res[3].data || [];
+    patient._ordonnances = res[4].data || [];
+    patient._paiements = res[5].data || [];
     renderFiche();
   }
 
@@ -203,7 +332,10 @@
           '<p class="muted">' + [p.sexe === "F" ? "Femme" : p.sexe === "M" ? "Homme" : "",
             p.date_naissance ? G.ageTexte(p.date_naissance) + " (né(e) le " + G.fmtDate(p.date_naissance) + ")" : ""]
             .filter(Boolean).join(" · ") + '</p></div>' +
-        '<button class="btn btn--small btn--ghost" id="pat-edit">Modifier</button>' +
+        '<div class="actions">' +
+          (G.encaisser ? '<button class="btn btn--small" id="pat-pay">Encaisser</button>' : "") +
+          '<button class="btn btn--small btn--ghost" id="pat-edit">Modifier</button>' +
+        '</div>' +
         '<div class="kv-grid">' +
           info("Téléphone", p.telephone) + info("Adresse", p.adresse) +
           info("Profession", p.profession) + info("Personne à prévenir", p.contact_urgence) +
@@ -232,13 +364,30 @@
             (G.peut("admin", "medecin") ? '<button class="btn btn--small" id="consult-add">+ Nouvelle consultation</button>' : "") +
           '</div>' +
           renderConsultations(p._consultations) +
+        '</div>' +
+
+        '<div class="card-box">' +
+          '<div class="card-box__head"><h3>Ordonnances (' + p._ordonnances.length + ')</h3>' +
+            (G.peut("admin", "medecin") ? '<button class="btn btn--small" id="ordo-add">+ Nouvelle ordonnance</button>' : "") +
+          '</div>' +
+          renderOrdonnances(p._ordonnances) +
         '</div>';
+    }
+
+    if (G.peut("admin", "medecin", "secretaire")) {
+      html += '<div class="card-box"><div class="card-box__head"><h3>Paiements</h3></div>' + renderPaiements(p._paiements) + '</div>';
     }
 
     var fiche = $("#pat-fiche", el);
     fiche.innerHTML = html;
     $("#pat-back", fiche).addEventListener("click", retourListe);
     $("#pat-edit", fiche).addEventListener("click", function () { ouvrirFormPatient(patient); });
+    var pay = $("#pat-pay", fiche);
+    if (pay) pay.addEventListener("click", function () {
+      G.encaisser({ patient_id: patient.id, patient_nom: patient.prenom + " " + patient.nom, apres: function () { ouvrirFiche(patient.id); } });
+    });
+    var oa = $("#ordo-add", fiche);
+    if (oa) oa.addEventListener("click", function () { ouvrirOrdonnance(null); });
     if (G.soignant()) {
       $("#med-edit", fiche).addEventListener("click", function () {
         G.remplirForm($("#form-medical", el), patient._medical);
@@ -305,7 +454,9 @@
       var cst = patient._constantes.find(function (k) { return k.consultation_id === c.id; });
       return '<article class="consult">' +
         '<header><strong>' + G.fmtDateTime(c.date) + '</strong> · ' + esc(c.medecin_nom || "") +
-          (G.peut("admin", "medecin") ? ' <button class="icon-btn" data-edit-consult="' + c.id + '" title="Modifier">✏️</button>' : "") +
+          (G.peut("admin", "medecin") ? ' <button class="icon-btn" data-edit-consult="' + c.id + '" title="Modifier">✏️</button>' +
+            ' <button class="btn btn--small btn--ghost" data-ordo-consult="' + c.id + '">Ordonnance</button>' : "") +
+          (G.encaisser ? ' <button class="btn btn--small btn--ghost" data-pay-consult="' + c.id + '">Encaisser</button>' : "") +
         '</header>' +
         '<p><span class="lbl">Motif</span>' + G.nl2br(c.motif) + '</p>' +
         (cst ? '<p><span class="lbl">Constantes</span>' + esc(fmtConst(cst)) + '</p>' : "") +
@@ -315,6 +466,44 @@
         (c.notes ? '<p><span class="lbl">Notes</span>' + G.nl2br(c.notes) + '</p>' : "") +
         '</article>';
     }).join("");
+  }
+
+  function renderOrdonnances(list) {
+    if (!list.length) return '<p class="small-muted">Aucune ordonnance.</p>';
+    return '<div class="table-wrap table-wrap--flat"><table class="stock-table"><thead><tr><th>N°</th><th>Date</th><th>Médicaments</th><th>Médecin</th><th></th></tr></thead><tbody>' +
+      list.map(function (o) {
+        return '<tr><td class="mono">' + o.numero + '</td><td>' + G.fmtDate(o.date) + '</td>' +
+          '<td class="motif">' + esc(o.lignes.map(function (l) { return l.medicament; }).join(", ")) + '</td>' +
+          '<td>' + esc(o.medecin_nom || "—") + '</td>' +
+          '<td><button class="btn btn--small btn--ghost" data-print-ordo="' + o.id + '">Imprimer</button></td></tr>';
+      }).join("") + '</tbody></table></div>';
+  }
+
+  var MODES = { especes: "Espèces", orange_money: "Orange Money", moov_money: "Moov Money", autre: "Autre" };
+  function renderPaiements(list) {
+    if (!list.length) return '<p class="small-muted">Aucun paiement.</p>';
+    var total = list.filter(function (x) { return !x.annule; }).reduce(function (s, x) { return s + x.total; }, 0);
+    return '<div class="table-wrap table-wrap--flat"><table class="stock-table"><thead><tr><th>Reçu</th><th>Date</th><th>Détail</th><th>Mode</th><th class="r">Montant</th><th></th></tr></thead><tbody>' +
+      list.map(function (x) {
+        return '<tr' + (x.annule ? ' class="row-off"' : "") + '><td class="mono">' + x.numero + '</td><td>' + G.fmtDate(x.date) + '</td>' +
+          '<td class="motif">' + esc(x.lignes.map(function (l) { return l.libelle; }).join(", ")) + (x.annule ? ' <span class="badge badge--out">Annulé</span>' : "") + '</td>' +
+          '<td>' + MODES[x.mode] + '</td><td class="r"><strong>' + G.fcfa(x.total) + '</strong></td>' +
+          '<td><button class="btn btn--small btn--ghost" data-print-recu="' + x.id + '">Reçu</button></td></tr>';
+      }).join("") + '</tbody></table></div><p class="total-ligne">Total payé : <strong>' + G.fcfa(total) + '</strong></p>';
+  }
+
+  function actionsFiche(e) {
+    if (!patient) return;
+    var b;
+    if ((b = e.target.closest("[data-ordo-consult]"))) ouvrirOrdonnance(b.dataset.ordoConsult);
+    else if ((b = e.target.closest("[data-print-ordo]"))) {
+      imprimerOrdonnance(patient._ordonnances.find(function (o) { return o.id === b.dataset.printOrdo; }));
+    } else if ((b = e.target.closest("[data-pay-consult]"))) {
+      G.encaisser({ patient_id: patient.id, patient_nom: patient.prenom + " " + patient.nom, consultation_id: b.dataset.payConsult,
+        apres: function () { ouvrirFiche(patient.id); } });
+    } else if ((b = e.target.closest("[data-print-recu]"))) {
+      G.imprimerRecu(patient._paiements.find(function (x) { return x.id === b.dataset.printRecu; }));
+    }
   }
 
   function retourListe() {

@@ -99,6 +99,38 @@
     if (b) b.closest("dialog").close();
   });
 
+  G.fcfa = function (n) { return Number(n || 0).toLocaleString("fr-FR").replace(/ | /g, " ") + " FCFA"; };
+
+  // Impression d'un document (ordonnance, reçu) dans une fenêtre dédiée, à l'en-tête du cabinet
+  G.imprimer = function (titre, corps, format) {
+    var w = window.open("", "_blank", "width=820,height=900");
+    if (!w) { G.toast("Autorisez les fenêtres pop-up pour imprimer.", true); return; }
+    var c = G.cfg;
+    w.document.write('<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>' + G.esc(titre) + '</title><style>' +
+      '@page{size:' + (format || "A5") + ';margin:12mm}' +
+      'body{font-family:system-ui,Segoe UI,Arial,sans-serif;color:#111;font-size:13px;margin:0}' +
+      '.ent{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f766e;padding-bottom:8px;margin-bottom:14px}' +
+      '.ent h1{margin:0;font-size:18px;color:#0f766e}.ent p{margin:2px 0;font-size:11px;color:#444}' +
+      '.croix{width:38px;height:38px;border-radius:8px;background:#0f766e;color:#fff;font-size:30px;line-height:38px;text-align:center;font-weight:700}' +
+      'h2{text-align:center;letter-spacing:.15em;font-size:16px;margin:10px 0 14px}' +
+      '.meta{display:flex;justify-content:space-between;gap:10px;margin-bottom:12px}.meta div{line-height:1.5}' +
+      'table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 4px;border-bottom:1px solid #ddd;vertical-align:top}' +
+      'th{font-size:11px;text-transform:uppercase;color:#555}.r{text-align:right}' +
+      'ol{padding-left:18px}ol li{margin-bottom:10px}ol li strong{font-size:14px}.pos{color:#333}' +
+      '.tot td{font-weight:700;font-size:15px;border-top:2px solid #111;border-bottom:none}' +
+      '.sign{margin-top:36px;text-align:right}.sign span{display:inline-block;border-top:1px solid #111;padding-top:4px;min-width:180px;text-align:center}' +
+      '.pied{margin-top:24px;font-size:10px;color:#666;text-align:center}.annule{color:#b91c1c;font-weight:700;text-align:center;font-size:18px;border:2px solid #b91c1c;padding:6px;margin-bottom:10px}' +
+      '@media screen{body{padding:20px;max-width:560px;margin:auto}.noprint{text-align:center;margin-bottom:16px}.noprint button{font-size:15px;padding:8px 18px;cursor:pointer}}' +
+      '@media print{.noprint{display:none}}' +
+      '</style></head><body>' +
+      '<div class="noprint"><button onclick="window.print()">🖨️ Imprimer</button></div>' +
+      '<div class="ent"><div><h1>' + G.esc(c.nom) + '</h1><p>' + G.esc(c.adresse || "") + '</p><p>Tél : ' + G.esc(c.telephones || "") + '</p></div><div class="croix">+</div></div>' +
+      corps + '</body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(function () { try { w.print(); } catch (e) { /* l'utilisateur imprimera avec le bouton */ } }, 400);
+  };
+
   G.module = function (m) { G.modules.push(m); };
 
   var actif = null;
@@ -107,7 +139,8 @@
     if (!m) return;
     actif = id;
     G.$$(".tab", G.$("#tabs")).forEach(function (t) { t.classList.toggle("is-active", t.dataset.tab === id); });
-    G.modules.forEach(function (x) { if (x.el) x.el.classList.toggle("hidden", x.id !== id); });
+    // "view-off" (et non display:none) : les dialogues d'un onglet masqué restent utilisables depuis les autres
+    G.modules.forEach(function (x) { if (x.el) x.el.classList.toggle("view-off", x.id !== id); });
     G.status("");
     try { localStorage.setItem("gestion_onglet", id); } catch (e) { /* stockage indisponible */ }
     if (m.show) m.show(arg);
@@ -124,7 +157,7 @@
       b.addEventListener("click", function () { G.ouvrir(m.id); });
       tabs.appendChild(b);
       var sec = document.createElement("section");
-      sec.id = "view-" + m.id; sec.className = "hidden";
+      sec.id = "view-" + m.id; sec.className = "view-off";
       views.appendChild(sec);
       m.el = sec;
       m.init(sec);

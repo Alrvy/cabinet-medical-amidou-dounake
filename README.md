@@ -8,10 +8,11 @@ Tél : 66 88 60 33 / 76 44 40 52
 | Fichier | Rôle |
 |---|---|
 | `index.html` | Site public : présentation, services, horaires, prise de rendez-vous (enregistrée en base + WhatsApp), contact |
-| `gestion.html` | Logiciel de gestion (connexion obligatoire) : Patients, Rendez-vous, Stock, Utilisateurs |
+| `gestion.html` | Logiciel de gestion (connexion obligatoire) : Patients (consultations, ordonnances), Rendez-vous, Caisse, Stock, Utilisateurs |
 | `js/gestion/*.js` | Modules du logiciel (`core.js` = noyau commun, un fichier par module) |
 | `supabase/schema.sql` | Base : stock, mouvements, rendez-vous |
 | `supabase/002_roles_patients.sql` | Rôles du personnel, patients, dossier médical, constantes, consultations, journal |
+| `supabase/003_ordonnances_caisse.sql` | Ordonnances, tarifs des actes, caisse (reçus non modifiables, annulation admin) |
 | `supabase/functions/gerer-utilisateurs/` | Fonction serveur : création et gestion des comptes (réservée à l'admin) |
 | `js/config.js` | WhatsApp, horaires, connexion Supabase |
 
@@ -22,16 +23,16 @@ HTML/CSS/JavaScript sans étape de build. Base de données : [Supabase](https://
 | Rôle | Accès |
 |---|---|
 | Administrateur | Tout + création/désactivation des comptes + journal d'activité |
-| Médecin | Patients, dossier médical, consultations, constantes, stock, rendez-vous |
-| Infirmier(e) | Patients, dossier médical, constantes, stock ; consultations et rendez-vous en lecture |
-| Secrétaire | Identité des patients, rendez-vous ; aucun accès au médical ni au stock |
+| Médecin | Patients, dossier médical, consultations, ordonnances, constantes, caisse, stock, rendez-vous |
+| Infirmier(e) | Patients, dossier médical, constantes, stock ; consultations, ordonnances et rendez-vous en lecture |
+| Secrétaire | Identité des patients, rendez-vous, caisse ; aucun accès au médical ni au stock |
 
 Les droits sont appliqués **par la base de données** (Row Level Security), pas seulement par l'interface.
 Personne ne peut s'inscrire seul : seuls les administrateurs créent des comptes (onglet Utilisateurs).
 
 ## Installation de la base (dans l'ordre, une seule fois)
 
-1. **SQL Editor** : exécuter `supabase/schema.sql`, puis `supabase/002_roles_patients.sql`.
+1. **SQL Editor** : exécuter dans l'ordre `supabase/schema.sql`, `002_roles_patients.sql`, `003_ordonnances_caisse.sql`.
    Tous les comptes existant au moment de la migration 002 deviennent administrateurs.
 2. **Edge Functions → Deploy a new function → Via Editor** : nom `gerer-utilisateurs`, coller
    `supabase/functions/gerer-utilisateurs/index.ts`, **Deploy**.
