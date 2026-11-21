@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Gestion de stock — Cabinet Médical Amidou Dounake</title>
+  <meta name="theme-color" content="#115e59">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="stock-page">
+
+  <header class="header stock-header">
+    <div class="container header__inner">
+      <a href="index.html" class="logo">
+        <img src="img/favicon.svg" alt="" width="30" height="30">
+        <span>Espace cabinet<br><strong>Gestion de stock</strong></span>
+      </a>
+      <button id="btn-logout" class="btn btn--small btn--ghost hidden" style="color:#fff;border-color:#fff">Verrouiller</button>
+    </div>
+  </header>
+
+  <!-- ====== ÉCRAN DE VERROUILLAGE ====== -->
+  <section id="lock-screen" class="lock container">
+    <h1 id="lock-title">Espace cabinet</h1>
+    <p id="lock-text">Entrez votre code d'accès.</p>
+    <form id="lock-form" class="form">
+      <label>Code d'accès
+        <input type="password" id="pin" inputmode="numeric" autocomplete="current-password" minlength="4" required>
+      </label>
+      <label id="pin2-wrap" class="hidden">Confirmer le code
+        <input type="password" id="pin2" inputmode="numeric" autocomplete="new-password" minlength="4">
+      </label>
+      <p class="form__error" id="lock-error" role="alert"></p>
+      <button type="submit" class="btn">Entrer</button>
+    </form>
+  </section>
+
+  <!-- ====== APPLICATION ====== -->
+  <main id="app" class="container hidden" style="padding-bottom:3rem">
+    <div class="kpis">
+      <div class="kpi"><strong id="k-total">0</strong><span>articles en stock</span></div>
+      <div class="kpi kpi--warn"><strong id="k-low">0</strong><span>stock faible</span></div>
+      <div class="kpi kpi--danger"><strong id="k-out">0</strong><span>ruptures</span></div>
+      <div class="kpi kpi--danger"><strong id="k-exp">0</strong><span>périmés / &lt; 30 jours</span></div>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Rechercher un article, un fournisseur…">
+      <select id="filter-cat">
+        <option value="">Toutes catégories</option>
+      </select>
+      <select id="filter-state">
+        <option value="">Tous états</option>
+        <option value="low">Stock faible</option>
+        <option value="out">Rupture</option>
+        <option value="exp">Périmé / bientôt</option>
+      </select>
+      <button class="btn btn--small" id="btn-add">+ Ajouter un article</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>Article</th><th>Catégorie</th><th>Quantité</th><th>Seuil</th>
+            <th>Péremption</th><th>Fournisseur</th><th>État</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="stock-body"></tbody>
+      </table>
+      <p id="empty" class="empty hidden">Aucun article. Cliquez sur « + Ajouter un article » pour commencer.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn--small btn--ghost" id="btn-history">Historique des mouvements</button>
+      <button class="btn btn--small btn--ghost" id="btn-csv">Exporter (Excel/CSV)</button>
+      <button class="btn btn--small btn--ghost" id="btn-backup">Sauvegarder</button>
+      <label class="btn btn--small btn--ghost">Restaurer<input type="file" id="file-restore" accept="application/json" hidden></label>
+    </div>
+    <p class="small-muted">Les données sont enregistrées sur cet appareil, dans ce navigateur. Faites régulièrement une sauvegarde (bouton « Sauvegarder ») et gardez le fichier en lieu sûr.</p>
+  </main>
+
+  <!-- ====== DIALOGUE ARTICLE ====== -->
+  <dialog id="dlg-item">
+    <form id="item-form" class="form" method="dialog">
+      <h2 id="item-title">Nouvel article</h2>
+      <label>Nom de l'article *<input name="nom" required placeholder="Ex : Paracétamol 500 mg"></label>
+      <div class="form__row">
+        <label>Catégorie
+          <input name="categorie" list="cats" placeholder="Ex : Médicament">
+          <datalist id="cats">
+            <option value="Médicament"><option value="Consommable"><option value="Matériel"><option value="Réactif / labo">
+          </datalist>
+        </label>
+        <label>Unité<input name="unite" placeholder="Ex : boîte, flacon, pièce"></label>
+      </div>
+      <div class="form__row">
+        <label>Quantité *<input name="quantite" type="number" min="0" step="1" required value="0"></label>
+        <label>Seuil d'alerte<input name="seuil" type="number" min="0" step="1" value="5"></label>
+      </div>
+      <div class="form__row">
+        <label>Date de péremption<input name="peremption" type="date"></label>
+        <label>Prix unitaire (FCFA)<input name="prix" type="number" min="0" step="1"></label>
+      </div>
+      <label>Fournisseur<input name="fournisseur" placeholder="Ex : Pharmacie Djiguiya"></label>
+      <p class="form__error" id="item-error"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn--ghost" data-close>Annuler</button>
+        <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ====== DIALOGUE MOUVEMENT ====== -->
+  <dialog id="dlg-move">
+    <form id="move-form" class="form" method="dialog">
+      <h2 id="move-title">Mouvement</h2>
+      <p class="small-muted" id="move-info"></p>
+      <div class="form__row">
+        <label>Type
+          <select name="type">
+            <option value="in">Entrée (réception)</option>
+            <option value="out">Sortie (utilisation)</option>
+          </select>
+        </label>
+        <label>Quantité *<input name="qte" type="number" min="1" step="1" required value="1"></label>
+      </div>
+      <label>Note<input name="note" placeholder="Ex : livraison, patient, perte…"></label>
+      <p class="form__error" id="move-error"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn--ghost" data-close>Annuler</button>
+        <button type="submit" class="btn">Valider</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ====== DIALOGUE HISTORIQUE ====== -->
+  <dialog id="dlg-history">
+    <div class="form">
+      <h2>Historique des mouvements</h2>
+      <ul class="history" id="history-list"></ul>
+      <div class="dialog-actions"><button type="button" class="btn" data-close>Fermer</button></div>
+    </div>
+  </dialog>
+
+  <script src="js/stock.js"></script>
+</body>
+</html>
